@@ -205,6 +205,10 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    int nH   = 0;
    TLorentzVector chi1(0,0,0,0);
    TLorentzVector chi2(0,0,0,0);
+   TLorentzVector top(0,0,0,0);
+   TLorentzVector W_Suu(0,0,0,0);
+   TLorentzVector b_Suu(0,0,0,0);
+   TLorentzVector higgs(0,0,0,0);
 //   double b_W_deltar[100],h_t_deltar[100], min_qqb_deltar[100], min_bbqqb_deltar[100];
 //want full hadronic case
    for (auto iG = genParticles->begin(); iG != genParticles->end(); iG++) 
@@ -216,12 +220,13 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
          {
             const reco::Candidate* W_daughter = W_final->daughter(iii);
             if (abs(W_daughter->pdgId())<6) nq++;
-
          }
+         W_Suu.SetPxPyPzE(W_final->px(),W_final->py(),W_final->pz(),W_final->energy());
          nW++;
       }
-      else if ( (abs(iG->pdgId()) == 5) &&  ((abs(iG->mother()->pdgId()) == chi_pdgid) || (abs(iG->mother()->pdgId()) == 2))  )
+      else if ( (abs(iG->pdgId()) == 5) &&  ((abs(iG->mother()->pdgId()) == chi_pdgid))  )
       {
+         b_Suu->SetPxPyPzE(iG->px(),iG->py(),iG->pz(),iG->energy());
          nq++;
       } 
 
@@ -246,6 +251,7 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
                nq++;
             }
          }
+         top.SetPxPyPzE(iG->px(),iG->py(),iG->pz(),iG->energy());
          ntop++;
       }
 
@@ -257,6 +263,8 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
             const reco::Candidate* h_daughter = h_final->daughter(iii);
             if (abs(h_daughter->pdgId())<6) nq++;
          }
+
+         higgs.SetPxPyPzE(iG->px(),iG->py(),iG->pz(),iG->energy());
          nH++;
       }
       else if ((abs(iG->pdgId()) == chi_pdgid) && (iG->isLastCopy()))
@@ -330,17 +338,45 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
 
    chi1.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
    chi2.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
+   top.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
+   W_Suu.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
+   b_Suu.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
+   higgs.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
 
    TVector3 chi1_vec = chi1.Vect();
    TVector3 chi2_vec = chi2.Vect();
+   TVector3 top_vec = top.Vect();
+   TVector3 W_Suu_vec = W_Suu.Vect();
+   TVector3 b_Suu_vec = b_Suu.Vect();
+   TVector3 higgs_vec = higgs.Vect();
 
    double cosAngleChi1 = cos(chi1_vec.Angle(thrust_vector));
    double cosAngleChi2 = cos(chi2_vec.Angle(thrust_vector));
+   double cosAngleTop = cos(top_vec.Angle(thrust_vector));
+   double cosAngleW_Suu = cos(W_Suu_vec.Angle(thrust_vector));
+   double cosAngleB_Suu = cos(b_Suu_vec.Angle(thrust_vector));
+   double cosAngleHiggs = cos(higgs_vec.Angle(thrust_vector));
+
+   std::cout << "Objects in SuperJet 1: ";
+   if(cosAngleChi1<0)  std::cout << "Chi1 "; 
+   if(cosAngleChi2<0)  std::cout << "Chi2 "; 
+   if(cosAngleTop<0)   std::cout << "Top "; 
+   if(cosAngleW_Suu<0) std::cout << "W_Suu "; 
+   if(cosAngleB_Suu<0) std::cout << "b_Suu "; 
+   if(cosAngleHiggs<0) std::cout << "Higgs "; 
+   std::cout << "].  Objects in SuperJet 2: [";
+   if(cosAngleChi1>0)  std::cout << "Chi1 "; 
+   if(cosAngleChi2>0)  std::cout << "Chi2 "; 
+   if(cosAngleTop>0)   std::cout << "Top "; 
+   if(cosAngleW_Suu>0) std::cout << "W_Suu "; 
+   if(cosAngleB_Suu>0) std::cout << "b_Suu "; 
+   if(cosAngleHiggs>0) std::cout << "Higgs ";
+   std::cout << " ]"
 
    if((cosAngleChi1*cosAngleChi2 > 0))
    {
       nBadClusters++;
-      std::cout << "Gen Chis are in same SuperJet - " << nBadClusters << " out of " << eventnum << " events." << std::endl;
+      //std::cout << "Gen Chis are in same SuperJet - " << nBadClusters << " out of " << eventnum << " events." << std::endl;
    }
 
    for(auto iJet = fatJets->begin(); iJet != fatJets->end(); iJet++)         //get vector of all sorted superjet particles
@@ -387,6 +423,8 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
          superJetE +=iP->E();
       }
       superJet_mass[nSuperJets] = sqrt(pow(superJetE,2)-pow(superJetpx,2)-pow(superJetpy,2)-pow(superJetpz,2));
+
+
       TLorentzVector superJetTLV(superJetpx,superJetpy,superJetpz,superJetE);    //Lorentz vector representing jet axis -> now minimize the parallel momentum
       double betaMag = calcMPP(superJetTLV);
       std::vector<fastjet::PseudoJet> boostedSuperJetPart;
@@ -400,7 +438,7 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       }
 
       ///reclustering SuperJet that is now boosted into the MPP frame
-      double R = 0.4;
+      double R = 0.6;
       fastjet::JetDefinition jet_def(fastjet::antikt_algorithm, R);
       fastjet::ClusterSequence cs_jet(boostedSuperJetPart, jet_def); 
       std::vector<fastjet::PseudoJet> jetsFJ_jet = fastjet::sorted_by_E(cs_jet.inclusive_jets(5.0));
@@ -432,6 +470,11 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
 
       nSuperJets++; 
    }
+   if((cosAngleChi1*cosAngleChi2 > 0))
+   {
+      std::cout << "Bad event: SJ1 Mass / SJ2 Mass  - " << superJet_mass[0] << "/" << superJet_mass[1] << std::endl;
+   }
+
    superJetOne.clear();
    superJetTwo.clear();
 
