@@ -1,0 +1,2 @@
+ALL_PACKAGES += crab_projects/crab_diquark_4TeV_chi850GeV_0000
+subdirs_src_crab_projects_crab_diquark_4TeV_chi850GeV_0000 := 

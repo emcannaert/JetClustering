@@ -1,0 +1,2 @@
+ALL_SUBSYSTEMS+=analyzers
+subdirs_src_analyzers = src_analyzers_analyzers
