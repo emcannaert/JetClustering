@@ -87,6 +87,7 @@ private:
    double tot_jet_mass,decay_inv_mass, chi_inv_mass;
    int nSuperJets;
    int nhadevents = 0;
+   int nBadClusters =0;
    int jet_ndaughters[100], jet_nAK4[100],jet_nAK4_20[100],jet_nAK4_30[100],jet_nAK4_50[100],jet_nAK4_70[100],jet_nAK4_100[100],jet_nAK4_150[100];
 };
 
@@ -202,6 +203,8 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    int nW   = 0;
    int ntop = 0;
    int nH   = 0;
+   TLorentzVector chi1(0,0,0,0);
+   TLorentzVector chi2(0,0,0,0);
 //   double b_W_deltar[100],h_t_deltar[100], min_qqb_deltar[100], min_bbqqb_deltar[100];
 //want full hadronic case
    for (auto iG = genParticles->begin(); iG != genParticles->end(); iG++) 
@@ -258,6 +261,8 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       }
       else if ((abs(iG->pdgId()) == chi_pdgid) && (iG->isLastCopy()))
       {
+         if      (nChi == 0) chi1.SetPxPyPzE(iG->px(),iG->py(),iG->pz(),iG->energy());
+         else if (nChi == 1) chi2.SetPxPyPzE(iG->px(),iG->py(),iG->pz(),iG->energy());
          nChi++;
       } 
       else if ((abs(iG->pdgId()) == suu_pdgid) && (iG->isLastCopy())) nSuu++;
@@ -267,7 +272,6 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    //std::cout << "nH/nt/nW/nq" << nH << "/" << ntop<< "/" << nW<< "/" <<nq << std::endl;
    if( !((nH == 1) && (nW == 2) && (nq > 7)  && (ntop == 1))) return;
    nhadevents++;
-   std::cout << " NumHadEvents: " << nhadevents << " out of " << eventnum << std::endl;
 
 
 
@@ -286,7 +290,7 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    double tot_jet_px=0,tot_jet_py=0,tot_jet_pz=0, tot_jet_E=0;
    for(auto iJet = fatJets->begin(); iJet != fatJets->end(); iJet++)         ////////Over AK8 Jets
    {
-      if( (sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 100.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) || (iJet->userFloat("ak8PFJetsPuppiSoftDropMass") < 15.) ) continue;
+      if((sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 100.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) || (iJet->userFloat("ak8PFJetsPuppiSoftDropMass") < 15.) ) continue;
       jet_pt[nfatjets] = iJet->pt();
       jet_eta[nfatjets] = iJet->eta();
       jet_mass[nfatjets] = iJet->mass();
@@ -321,7 +325,23 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    Vector thrustAxis = thrust_.axis();
    TVector3 thrust_vector(thrustAxis.X(),thrustAxis.Y(),thrustAxis.Z());
 
+   ////////check out chi's and see if they are in the same superjet
+   if((ch1.E() < 0.0000000001)||(chi2.E() < 0.0000000001 ) std::cout << "Somehow couldn't find one of the gen chi's.  ";
+      
+   chi1.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
+   chi2.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
 
+   TVector3 chi1_vec = chi1.Vect();
+   TVector3 chi2_vec = chi2.Vect();
+
+   double cosAngleChi1 = cos(chi1_vec.Angle(thrust_vector));
+   double cosAngleChi2 = cos(chi2_vec.Angle(thrust_vector));
+
+   if((cosAngleChi1*cosAngleChi2 > 0))
+   {
+      nBadClusters++;
+      std::cout << "Gen Chis are in same SuperJet - " << nBadClusters << " out of " << eventnum << " events." << std::endl;
+   }
 
    for(auto iJet = fatJets->begin(); iJet != fatJets->end(); iJet++)         //get vector of all sorted superjet particles
    {
