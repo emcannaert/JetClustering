@@ -226,7 +226,7 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       }
       else if ( (abs(iG->pdgId()) == 5) &&  ((abs(iG->mother()->pdgId()) == chi_pdgid))  )
       {
-         b_Suu->SetPxPyPzE(iG->px(),iG->py(),iG->pz(),iG->energy());
+         b_Suu.SetPxPyPzE(iG->px(),iG->py(),iG->pz(),iG->energy());
          nq++;
       } 
 
@@ -357,21 +357,6 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    double cosAngleB_Suu = cos(b_Suu_vec.Angle(thrust_vector));
    double cosAngleHiggs = cos(higgs_vec.Angle(thrust_vector));
 
-   std::cout << "Objects in SuperJet 1: ";
-   if(cosAngleChi1<0)  std::cout << "Chi1 "; 
-   if(cosAngleChi2<0)  std::cout << "Chi2 "; 
-   if(cosAngleTop<0)   std::cout << "Top "; 
-   if(cosAngleW_Suu<0) std::cout << "W_Suu "; 
-   if(cosAngleB_Suu<0) std::cout << "b_Suu "; 
-   if(cosAngleHiggs<0) std::cout << "Higgs "; 
-   std::cout << "].  Objects in SuperJet 2: [";
-   if(cosAngleChi1>0)  std::cout << "Chi1 "; 
-   if(cosAngleChi2>0)  std::cout << "Chi2 "; 
-   if(cosAngleTop>0)   std::cout << "Top "; 
-   if(cosAngleW_Suu>0) std::cout << "W_Suu "; 
-   if(cosAngleB_Suu>0) std::cout << "b_Suu "; 
-   if(cosAngleHiggs>0) std::cout << "Higgs ";
-   std::cout << " ]"
 
    if((cosAngleChi1*cosAngleChi2 > 0))
    {
@@ -473,6 +458,24 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    if((cosAngleChi1*cosAngleChi2 > 0))
    {
       std::cout << "Bad event: SJ1 Mass / SJ2 Mass  - " << superJet_mass[0] << "/" << superJet_mass[1] << std::endl;
+      std::cout << "Objects in SuperJet 1: [";
+      if(cosAngleChi1<0)  std::cout << "Chi1 "; 
+      if(cosAngleChi2<0)  std::cout << "Chi2 "; 
+      if(cosAngleTop<0)   std::cout << "Top "; 
+      if(cosAngleW_Suu<0) std::cout << "W_Suu "; 
+      if(cosAngleB_Suu<0) std::cout << "b_Suu "; 
+      if(cosAngleHiggs<0) std::cout << "Higgs "; 
+      std::cout << "].  Objects in SuperJet 2: [";
+      if(cosAngleChi1>0)  std::cout << "Chi1 "; 
+      if(cosAngleChi2>0)  std::cout << "Chi2 "; 
+      if(cosAngleTop>0)   std::cout << "Top "; 
+      if(cosAngleW_Suu>0) std::cout << "W_Suu "; 
+      if(cosAngleB_Suu>0) std::cout << "b_Suu "; 
+      if(cosAngleHiggs>0) std::cout << "Higgs ";
+      std::cout << " ]";
+
+      std::cout << "   cos of chi1/chi2 w/ TA: " <<  cos(chi1_vec.Angle(thrust_vector)) << "/"<< cos(chi1_vec.Angle(thrust_vector)) << " ";
+      std::cout << "   chi deltaR: " << sqrt(pow(chi1.Phi()-chi2.Phi(),2)+pow(chi1.Eta()-chi2.Eta(),2)) << std::endl;
    }
 
    superJetOne.clear();
