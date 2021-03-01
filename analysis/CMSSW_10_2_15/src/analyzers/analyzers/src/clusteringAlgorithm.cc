@@ -326,8 +326,8 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    TVector3 thrust_vector(thrustAxis.X(),thrustAxis.Y(),thrustAxis.Z());
 
    ////////check out chi's and see if they are in the same superjet
-   if((ch1.E() < 0.0000000001)||(chi2.E() < 0.0000000001 ) std::cout << "Somehow couldn't find one of the gen chi's.  ";
-      
+   if((chi1.E() < 0.0000000001)||(chi2.E() < 0.0000000001 )) std::cout << "Somehow couldn't find one of the gen chi's.  ";
+
    chi1.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
    chi2.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
 
