@@ -286,7 +286,7 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    double tot_jet_px=0,tot_jet_py=0,tot_jet_pz=0, tot_jet_E=0;
    for(auto iJet = fatJets->begin(); iJet != fatJets->end(); iJet++)         ////////Over AK8 Jets
    {
-      if( (sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 500.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) || (iJet->userFloat("ak8PFJetsPuppiSoftDropMass") < 50.) ) continue;
+      if( (sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 100.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) || (iJet->userFloat("ak8PFJetsPuppiSoftDropMass") < 15.) ) continue;
       jet_pt[nfatjets] = iJet->pt();
       jet_eta[nfatjets] = iJet->eta();
       jet_mass[nfatjets] = iJet->mass();
@@ -325,7 +325,7 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
 
    for(auto iJet = fatJets->begin(); iJet != fatJets->end(); iJet++)         //get vector of all sorted superjet particles
    {
-      if( (sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 250.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) || (iJet->userFloat("ak8PFJetsPuppiSoftDropMass") < 15.) ) continue;
+      if( (sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 100.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) || (iJet->userFloat("ak8PFJetsPuppiSoftDropMass") < 15.) ) continue;
       TLorentzVector candJet(iJet->px(),iJet->py(),iJet->pz(),iJet->energy());
       candJet.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());         //boost jet into COM frame
 
