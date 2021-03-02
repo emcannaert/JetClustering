@@ -312,7 +312,7 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       tot_jet_px+=iJet->px();tot_jet_py+=iJet->py();tot_jet_pz+=iJet->pz();tot_jet_E+=iJet->energy();
       nfatjets++;
    }
-   if(nfatjets<1)return;
+   if(nfatjets<2)return;
 
 
    ///////////calculate COM of all jets
@@ -334,8 +334,6 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    TVector3 thrust_vector(thrustAxis.X(),thrustAxis.Y(),thrustAxis.Z());
 
    ////////check out chi's and see if they are in the same superjet
-   if((chi1.E() < 0.0000000001)||(chi2.E() < 0.0000000001 )) std::cout << "Somehow couldn't find one of the gen chi's.  ";
-
    chi1.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
    chi2.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
    top.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());
@@ -366,7 +364,7 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
 
    for(auto iJet = fatJets->begin(); iJet != fatJets->end(); iJet++)         //get vector of all sorted superjet particles
    {
-      if( (sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 100.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) || (iJet->userFloat("ak8PFJetsPuppiSoftDropMass") < 15.) ) continue;
+      if((sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 100.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) || (iJet->userFloat("ak8PFJetsPuppiSoftDropMass") < 15.) ) continue;
       TLorentzVector candJet(iJet->px(),iJet->py(),iJet->pz(),iJet->energy());
       candJet.Boost(-totJetBeta.X(),-totJetBeta.Y(),-totJetBeta.Z());         //boost jet into COM frame
 
@@ -457,8 +455,8 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    }
    if((cosAngleChi1*cosAngleChi2 > 0))
    {
-      std::cout << "Bad event: SJ1 Mass / SJ2 Mass  - " << superJet_mass[0] << "/" << superJet_mass[1] << std::endl;
-      std::cout << "Objects in SuperJet 1: [";
+      std::cout << "Bad event: SJ1 Mass / SJ2 Mass  - " << superJet_mass[0] << "/" << superJet_mass[1];
+      std::cout << "    Objects in SuperJet 1: [";
       if(cosAngleChi1<0)  std::cout << "Chi1 "; 
       if(cosAngleChi2<0)  std::cout << "Chi2 "; 
       if(cosAngleTop<0)   std::cout << "Top "; 
@@ -474,10 +472,16 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       if(cosAngleHiggs>0) std::cout << "Higgs ";
       std::cout << " ]";
 
-      std::cout << "   cos of chi1/chi2 w/ TA: " <<  cos(chi1_vec.Angle(thrust_vector)) << "/"<< cos(chi1_vec.Angle(thrust_vector)) << " ";
+      std::cout << "   cos chi1/chi2 w/ TA: " <<  cos(chi1_vec.Angle(thrust_vector)) << "/"<< cos(chi2_vec.Angle(thrust_vector)) << " ";
       std::cout << "   chi deltaR: " << sqrt(pow(chi1.Phi()-chi2.Phi(),2)+pow(chi1.Eta()-chi2.Eta(),2)) << std::endl;
+      std::cout << " Masses of jets being considered: ";
+      for(auto iJet = fatJets->begin(); iJet != fatJets->end(); iJet++)         ////////Over AK8 Jets
+      {
+         if((sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 100.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) || (iJet->userFloat("ak8PFJetsPuppiSoftDropMass") < 15.) ) continue;
+         std::cout << iJet->mass() << " ";
+      }
+      std::cout << std::endl;
    }
-
    superJetOne.clear();
    superJetTwo.clear();
 
