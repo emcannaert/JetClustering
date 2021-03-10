@@ -59,20 +59,18 @@ using namespace reco;
 typedef math::XYZTLorentzVector LorentzVector;
 typedef math::XYZVector Vector;
 
-class clusteringAnalyzer : public edm::EDAnalyzer 
+class clusteringAnalyzerBR : public edm::EDAnalyzer 
 {
 public:
-   explicit clusteringAnalyzer(const edm::ParameterSet&);
+   explicit clusteringAnalyzerBR(const edm::ParameterSet&);
 private:
    virtual void analyze(const edm::Event&, const edm::EventSetup&);
    double calc_mag(double px,double py, double pz);
    double calcMPP(TLorentzVector superJetTLV ); 
    bool isgoodjet(const float eta, const float NHF,const float NEMF, const size_t NumConst,const float CHF,const int CHM, const float MUF, const float CEMF);
    const reco::Candidate* parse_chain(const reco::Candidate* cand);
-   edm::EDGetTokenT<std::vector<reco::GenParticle>> genPartToken_; 
    edm::EDGetTokenT<std::vector<pat::Jet>> fatJetToken_;
    edm::EDGetTokenT<std::vector<pat::Jet>> jetToken_;
-
    edm::EDGetTokenT<edm::TriggerResults> triggerBits_;
 
    TTree * tree;
@@ -89,19 +87,14 @@ private:
    double SJ_mass_50[100], SJ_mass_70[100],superJet_mass[100],SJ_AK4_50_mass[100],SJ_AK4_70_mass[100];
    double tot_jet_mass,decay_inv_mass, chi_inv_mass;
    double AK4_mass[100];
-   double chi_dr,topPart_dr,higgs_dr,SuuW_dr,HiggsTop_dr,SuuWb_dr;
-   double topAK8_dr, WSuuAK8_dr,bSuuAK8_dr,higgsAK8_dr,topWAK8_dr,topbAK8_dr;
-   double topAK4_dr, WSuuAK4_dr,bSuuAK4_dr,higgsAK4_dr,topWAK4_dr,topbAK4_dr;
 
    int nSuperJets;
    int nhadevents = 0;
-   int nBadClusters =0;
    int jet_ndaughters[100], jet_nAK4[100],jet_nAK4_20[100],jet_nAK4_30[100],jet_nAK4_50[100],jet_nAK4_70[100],jet_nAK4_100[100],jet_nAK4_150[100];
 };
 
-clusteringAnalyzer::clusteringAnalyzer(const edm::ParameterSet& iConfig)
+clusteringAnalyzerBR::clusteringAnalyzerBR(const edm::ParameterSet& iConfig)
 {
-   genPartToken_ = consumes<std::vector<reco::GenParticle>>(iConfig.getParameter<edm::InputTag>("genPartCollection"));
    fatJetToken_ =    consumes<std::vector<pat::Jet>>(iConfig.getParameter<edm::InputTag>("fatJetCollection"));
    triggerBits_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("bits"));
    jetToken_    = consumes<std::vector<pat::Jet>>(iConfig.getParameter<edm::InputTag>("jetCollection"));
@@ -116,21 +109,6 @@ clusteringAnalyzer::clusteringAnalyzer(const edm::ParameterSet& iConfig)
    tree->Branch("tot_nAK4_50", &tot_nAK4_50, "tot_nAK4_50/I");             //total #AK4 jets (E>50 GeV) for BOTH superjets
    tree->Branch("tot_nAK4_70", &tot_nAK4_70, "tot_nAK4_70/I");
 
-
-   tree->Branch("topAK8_dr", &topAK8_dr, "topAK8_dr/D");
-   tree->Branch("WSuuAK8_dr", &WSuuAK8_dr, "WSuuAK8_dr/D");
-   tree->Branch("bSuuAK8_dr", &bSuuAK8_dr, "bSuuAK8_dr/D");
-   tree->Branch("higgsAK8_dr", &higgsAK8_dr, "higgsAK8_dr/D");
-   tree->Branch("topWAK8_dr", &topWAK8_dr, "topWAK8_dr/D");
-   tree->Branch("topbAK8_dr", &topbAK8_dr, "topbAK8_dr/D");
-
-   tree->Branch("topAK4_dr", &topAK4_dr, "topAK4_dr/D");
-   tree->Branch("WSuuAK4_dr", &WSuuAK4_dr, "WSuuAK4_dr/D");
-   tree->Branch("bSuuAK4_dr", &bSuuAK4_dr, "bSuuAK4_dr/D");
-   tree->Branch("higgsAK4_dr", &higgsAK4_dr, "higgsAK4_dr/D");
-   tree->Branch("topWAK4_dr", &topWAK4_dr, "topWAK4_dr/D");
-   tree->Branch("topbAK4_dr", &topbAK4_dr, "topbAK4_dr/D");
-
    tree->Branch("jet_pt", jet_pt, "jet_pt[nfatjets]/D");
    tree->Branch("jet_eta", jet_eta, "jet_eta[nfatjets]/D");
    tree->Branch("jet_mass", jet_mass, "jet_mass[nfatjets]/D");
@@ -144,21 +122,14 @@ clusteringAnalyzer::clusteringAnalyzer(const edm::ParameterSet& iConfig)
    tree->Branch("SJ_AK4_50_mass", SJ_AK4_50_mass, "SJ_AK4_50_mass[tot_nAK4_50]/D");    //mass of individual reclustered AK4 jets
    tree->Branch("SJ_AK4_70_mass", SJ_AK4_70_mass, "SJ_AK4_70_mass[tot_nAK4_70]/D");
 
-   tree->Branch("chi_dr", &chi_dr, "chi_dr/D");
-   tree->Branch("topPart_dr", &topPart_dr, "topPart_dr/D");
-   tree->Branch("higgs_dr", &higgs_dr, "higgs_dr/D");
-   tree->Branch("SuuW_dr", &SuuW_dr, "SuuW_dr/D");
-   tree->Branch("HiggsTop_dr", &HiggsTop_dr, "HiggsTop_dr/D");
-   tree->Branch("SuuWb_dr", &SuuWb_dr, "SuuWb_dr/D");
-
 }
 
 
-double clusteringAnalyzer::calc_mag(double px,double py, double pz)
+double clusteringAnalyzerBR::calc_mag(double px,double py, double pz)
 {
    return sqrt(pow(px,2)+pow(py,2)+pow(pz,2));
 }
-const reco::Candidate* clusteringAnalyzer::parse_chain(const reco::Candidate* cand)
+const reco::Candidate* clusteringAnalyzerBR::parse_chain(const reco::Candidate* cand)
 {  
    for (unsigned int iii=0; iii<cand->numberOfDaughters(); iii++)
    {
@@ -167,7 +138,7 @@ const reco::Candidate* clusteringAnalyzer::parse_chain(const reco::Candidate* ca
    return cand;
 }
 
-bool clusteringAnalyzer::isgoodjet(const float eta, const float NHF,const float NEMF, const size_t NumConst,const float CHF,const int CHM, const float MUF, const float CEMF)
+bool clusteringAnalyzerBR::isgoodjet(const float eta, const float NHF,const float NEMF, const size_t NumConst,const float CHF,const int CHM, const float MUF, const float CEMF)
 {
    if( (abs(eta) > 2.6)) return false;
 
@@ -179,7 +150,7 @@ bool clusteringAnalyzer::isgoodjet(const float eta, const float NHF,const float 
 
 }
 
-double clusteringAnalyzer::calcMPP(TLorentzVector superJetTLV ) 
+double clusteringAnalyzerBR::calcMPP(TLorentzVector superJetTLV ) 
 {
    Vector jet_axis(superJetTLV.Px()/superJetTLV.P(),superJetTLV.Py()/superJetTLV.P(),superJetTLV.Pz()/superJetTLV.P());
    double min_pp = 99999999999999.;
@@ -199,7 +170,7 @@ double clusteringAnalyzer::calcMPP(TLorentzVector superJetTLV )
       return min_boost;
 }
 
-void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+void clusteringAnalyzerBR::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 
    eventnum++;
@@ -221,145 +192,6 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
 //////////////////////////////////////////////////////////////////////
 
 
-/*
-////////////Gen Particles//////////////////////////////////
-//////////////////////////////////////////////////////////
-   edm::Handle<std::vector<reco::GenParticle>> genParticles;
-   iEvent.getByToken(genPartToken_, genParticles);
-
-   int suu_pdgid = 9936661;
-   int chi_pdgid = 9936662;
-   int nSuu = 0;
-   int nChi = 0;
-   int nq   = 0;
-   int nW   = 0;
-   int ntop = 0;
-   int nH   = 0;
-   int nb   = 0;
-   int nhq  = 0;
-   TLorentzVector chi1(0,0,0,0);        //0
-   TLorentzVector chi2(0,0,0,0);        //1
-   TLorentzVector top(0,0,0,0);         //2
-   TLorentzVector W_Suu(0,0,0,0);       //3
-   TLorentzVector b_Suu(0,0,0,0);       //4
-   TLorentzVector higgs(0,0,0,0);       //5
-   TLorentzVector higgs_b1(0,0,0,0);    //6
-   TLorentzVector higgs_b2(0,0,0,0);    //7
-   TLorentzVector W_Suu_q1(0,0,0,0);    //8
-   TLorentzVector W_Suu_q2(0,0,0,0);    //9
-   TLorentzVector W_top_q1(0,0,0,0);    //10
-   TLorentzVector W_top_q2(0,0,0,0);    //11
-   TLorentzVector top_W(0,0,0,0);       //12
-   TLorentzVector top_b(0,0,0,0);       //13
-
-
-
-//   double b_W_deltar[100],h_t_deltar[100], min_qqb_deltar[100], min_bbqqb_deltar[100];
-//want only fully hadronic events
-   for (auto iG = genParticles->begin(); iG != genParticles->end(); iG++) 
-   {
-      if ((abs(iG->pdgId()) == 24) && ((abs(iG->mother()->pdgId()) == chi_pdgid)) ) 
-      {
-         const reco::Candidate* W_final = parse_chain(iG->clone());
-         for (unsigned int iii=0; iii<W_final->numberOfDaughters(); iii++)
-         {
-            const reco::Candidate* W_daughter = W_final->daughter(iii);
-            if(abs(W_daughter->pdgId()) < 6)
-            { 
-               if     (W_Suu_q1.E() < 0.0000001)W_Suu_q1.SetPxPyPzE(W_daughter->px(),W_daughter->py(),W_daughter->pz(),W_daughter->energy());
-               else if(W_Suu_q2.E() < 0.0000001)W_Suu_q2.SetPxPyPzE(W_daughter->px(),W_daughter->py(),W_daughter->pz(),W_daughter->energy());
-               nq++;
-            }
-         }
-         W_Suu.SetPxPyPzE(W_final->px(),W_final->py(),W_final->pz(),W_final->energy());
-         nW++;
-      }
-      else if ( (abs(iG->pdgId()) == 5) && ((abs(iG->mother()->pdgId()) == chi_pdgid))  )
-      {
-         b_Suu.SetPxPyPzE(iG->px(),iG->py(),iG->pz(),iG->energy());
-         nb++;
-      } 
-
-      else if ( (abs(iG->pdgId()) == 6) && ((abs(iG->mother()->pdgId()) == chi_pdgid)) ) 
-      {
-         const reco::Candidate* t_final = parse_chain(iG->clone());
-         for (unsigned int iii=0; iii<t_final->numberOfDaughters(); iii++)
-         {
-            const reco::Candidate* t_daughter = t_final->daughter(iii);
-            if (abs(t_daughter->pdgId())==24) 
-            {
-               const reco::Candidate* W_final = parse_chain(t_daughter->clone());
-               for (unsigned int jjj=0; jjj<W_final->numberOfDaughters(); jjj++)
-               {
-                  const reco::Candidate* W_daughter = W_final->daughter(jjj);
-                  if(abs(W_daughter->pdgId()) < 6)
-                  {
-                     if     (W_top_q1.E() < 0.0000001)W_top_q1.SetPxPyPzE(W_daughter->px(),W_daughter->py(),W_daughter->pz(),W_daughter->energy());
-                     else if(W_top_q2.E() < 0.0000001)W_top_q2.SetPxPyPzE(W_daughter->px(),W_daughter->py(),W_daughter->pz(),W_daughter->energy());
-                     nq++;
-                  } 
-               }
-               top_W.SetPxPyPzE(t_daughter->px(),t_daughter->py(),t_daughter->pz(),t_daughter->energy());
-               nW++;
-            }
-            else if(abs(t_daughter->pdgId())==5) 
-            {
-               top_b.SetPxPyPzE(t_daughter->px(),t_daughter->py(),t_daughter->pz(),t_daughter->energy());
-               nb++;
-            }
-         }
-         top.SetPxPyPzE(iG->px(),iG->py(),iG->pz(),iG->energy());
-         ntop++;
-      }
-
-      else if ( (abs(iG->pdgId()) == 25) && ((abs(iG->mother()->pdgId()) == chi_pdgid)) ) 
-      {
-         const reco::Candidate* h_final = parse_chain(iG->clone());
-         for (unsigned int iii=0; iii<h_final->numberOfDaughters(); iii++)
-         {
-            const reco::Candidate* h_daughter = h_final->daughter(iii);
-            if (abs(h_daughter->pdgId())<6)
-            {
-               if     (higgs_b1.E() < 0.0000001)higgs_b1.SetPxPyPzE(h_daughter->px(),h_daughter->py(),h_daughter->pz(),h_daughter->energy());
-               else if(higgs_b2.E() < 0.0000001)higgs_b2.SetPxPyPzE(h_daughter->px(),h_daughter->py(),h_daughter->pz(),h_daughter->energy());
-               nhq++;
-            }
-         }
-
-         higgs.SetPxPyPzE(iG->px(),iG->py(),iG->pz(),iG->energy());
-         nH++;
-      }
-      else if ((abs(iG->pdgId()) == chi_pdgid) && (iG->isLastCopy()))
-      {
-         if      (nChi == 0) chi1.SetPxPyPzE(iG->px(),iG->py(),iG->pz(),iG->energy());
-         else if (nChi == 1) chi2.SetPxPyPzE(iG->px(),iG->py(),iG->pz(),iG->energy());
-         nChi++;
-      } 
-      else if ((abs(iG->pdgId()) == suu_pdgid) && (iG->isLastCopy())) nSuu++;
-   
-      //else if  ((abs(iG->pdgId()) == chi_pdgid) && (iG->isLastCopy())) nChi++;
-   }
-   //std::cout << "nH/nt/nW/nq" << nH << "/" << ntop<< "/" << nW<< "/" <<nq << std::endl;
-   if( !((nH == 1) && (nW == 2) && (nq > 3)  && (ntop == 1) && (nb >1) && (nhq > 1)  )) return;
-   nhadevents++;
-   */
-   std::vector<TLorentzVector> genParts;
-   genParts.push_back(chi1);
-   genParts.push_back(chi2);
-   genParts.push_back(top);
-   genParts.push_back(W_Suu);
-   genParts.push_back(b_Suu);
-   genParts.push_back(higgs);
-   genParts.push_back(higgs_b1);
-   genParts.push_back(higgs_b2);
-   genParts.push_back(W_Suu_q1);
-   genParts.push_back(W_Suu_q2);
-   genParts.push_back(W_top_q1);
-   genParts.push_back(W_top_q2);
-   genParts.push_back(top_W);
-   genParts.push_back(top_b);
-
-
    /////////////////////AK4 Jets////////////////////////////////
    edm::Handle<std::vector<pat::Jet> > smallJets;
    iEvent.getByToken(jetToken_, smallJets);
@@ -369,30 +201,6 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       if((!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) ) continue;
       AK4_mass[nAK4] = iJet->mass();
       nAK4++;
-   }
-
-   /*
-   std::cout << "////////////////////Info about genParts/////////////////////" << std::endl;
-   std::cout << "chi dr " << sqrt(pow(chi1.Phi()-chi2.Phi(),2)+pow(chi1.Eta()-chi2.Eta(),2)) << std::endl;
-   std::cout << "Top particle dr " << sqrt(pow(top_b.Phi()-W_top_q1.Phi(),2)+pow(top_b.Eta()-W_top_q1.Eta(),2)) << " " <<sqrt(pow(top_b.Phi()-W_top_q2.Phi(),2)+pow(top_b.Eta()-W_top_q2.Eta(),2)) << " " << sqrt(pow(W_top_q2.Phi()-W_top_q1.Phi(),2)+pow(W_top_q2.Eta()-W_top_q1.Eta(),2))<<std::endl;
-   std::cout << "Higgs dr " << sqrt(pow(higgs_b1.Phi()-higgs_b2.Phi(),2)+pow(higgs_b1.Eta()-higgs_b2.Eta(),2)) << std::endl;
-   std::cout << "Suu W dr " << sqrt(pow(W_Suu_q1.Phi()-b_Suu.Phi(),2)+pow(W_Suu_q1.Eta()-b_Suu.Eta(),2)) << " " <<sqrt(pow(W_Suu_q2.Phi()-b_Suu.Phi(),2)+pow(W_Suu_q2.Eta()-b_Suu.Eta(),2)) <<  " " << sqrt(pow(W_Suu_q1.Phi()-W_Suu_q2.Phi(),2)+pow(W_Suu_q1.Eta()-W_Suu_q2.Eta(),2))<< std::endl;
-   std::cout << "Higgs top dr " << sqrt(pow(higgs.Phi()-top.Phi(),2)+pow(higgs.Eta()-top.Eta(),2)) << std::endl;
-   std::cout << "Suu W b dr " << sqrt(pow(W_Suu.Phi()-b_Suu.Phi(),2)+pow(W_Suu.Eta()-b_Suu.Eta(),2)) << std::endl;
-   */
-
-   chi_dr     =sqrt(pow(chi1.Phi()-chi2.Phi(),2)+pow(chi1.Eta()-chi2.Eta(),2));
-   topPart_dr = std::max( std::max(   sqrt(pow(top_b.Phi()-W_top_q1.Phi(),2)+pow(top_b.Eta()-W_top_q1.Eta(),2)) , sqrt(pow(top_b.Phi()-W_top_q2.Phi(),2)+pow(top_b.Eta()-W_top_q2.Eta(),2))) ,sqrt(pow(W_top_q2.Phi()-W_top_q1.Phi(),2)+pow(W_top_q2.Eta()-W_top_q1.Eta(),2)) );
-   higgs_dr   = sqrt(pow(higgs_b1.Phi()-higgs_b2.Phi(),2)+pow(higgs_b1.Eta()-higgs_b2.Eta(),2));
-   SuuW_dr    = std::max(std::max(sqrt(pow(W_Suu_q1.Phi()-b_Suu.Phi(),2)+pow(W_Suu_q1.Eta()-b_Suu.Eta(),2)) ,sqrt(pow(W_Suu_q2.Phi()-b_Suu.Phi(),2)+pow(W_Suu_q2.Eta()-b_Suu.Eta(),2))),sqrt(pow(W_Suu_q1.Phi()-W_Suu_q2.Phi(),2)+pow(W_Suu_q1.Eta()-W_Suu_q2.Eta(),2)));
-   HiggsTop_dr=sqrt(pow(higgs.Phi()-top.Phi(),2)+pow(higgs.Eta()-top.Eta(),2));
-   SuuWb_dr   = sqrt(pow(W_Suu.Phi()-b_Suu.Phi(),2)+pow(W_Suu.Eta()-b_Suu.Eta(),2));
-
-   int numuse = 0;
-   for(auto iG = genParts.begin();iG != genParts.end();iG++)
-   {  
-      if(iG->E()<0.0000001)std:: cout << "Some particle was not intialized. Num/energy is " << numuse  <<"/" << iG->E()<< std::endl;
-      numuse++; 
    }
 
    std::vector<reco::LeafCandidate> candsBoosted;   
@@ -467,10 +275,6 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    double cosAngleB_Suu = cos(b_Suu_vec.Angle(thrust_vector));
    double cosAngleHiggs = cos(higgs_vec.Angle(thrust_vector));
 
-   if((cosAngleChi1*cosAngleChi2 > 0))
-   {
-      nBadClusters++;
-   }
    int nSJ_AK8[2];
    nSJ_AK8[0] = 0;nSJ_AK8[1]=0;
    for(auto iJet = fatJets->begin(); iJet != fatJets->end(); iJet++)         //get vector of all sorted superjet particles
@@ -538,7 +342,7 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       }
 
       ///reclustering SuperJet that is now boosted into the MPP frame
-      double R = 0.6;
+      double R = 0.4;
       fastjet::JetDefinition jet_def(fastjet::antikt_algorithm, R);
       fastjet::ClusterSequence cs_jet(boostedSuperJetPart, jet_def); 
       std::vector<fastjet::PseudoJet> jetsFJ_jet = fastjet::sorted_by_E(cs_jet.inclusive_jets(5.0));
@@ -570,132 +374,11 @@ void clusteringAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
 
       nSuperJets++; 
    }
-   int gpNum = 0;
-   for(auto iG = genParts.begin();iG != genParts.end();iG++)
-   {
-         double min_dr = 99999999999999.;         
-         for(auto iJet = fatJets->begin(); iJet != fatJets->end(); iJet++)         ////////Over AK8 Jets
-         {
-            if((sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 75.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) ) continue;
-            if(sqrt(pow(iG->Phi()-iJet->phi(),2)+pow(iG->Eta()-iJet->eta(),2)) < min_dr)
-            {
-               min_dr     = sqrt(pow(iG->Phi()-iJet->phi(),2)+pow(iG->Eta()-iJet->eta(),2));
-            }
-         }
-
-         double min_dr_AK4 = 99999999999999.;
-         
-         for(auto iJet = smallJets->begin(); iJet != smallJets->end(); iJet++)         ////////Over AK8 Jets
-         {
-            if((sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 75.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) ) continue;
-            if(sqrt(pow(iG->Phi()-iJet->phi(),2)+pow(iG->Eta()-iJet->eta(),2)) < min_dr_AK4)
-            {
-               min_dr_AK4     = sqrt(pow(iG->Phi()-iJet->phi(),2)+pow(iG->Eta()-iJet->eta(),2));
-            }
-         }
-
-         if(gpNum == 2) 
-         {
-            topAK8_dr= min_dr;
-            topAK4_dr= min_dr_AK4;
-
-         }
-         else if(gpNum == 3)
-         {
-            WSuuAK8_dr = min_dr;
-            WSuuAK4_dr= min_dr_AK4;
-
-         }
-         else if(gpNum == 4)
-         {
-            bSuuAK8_dr = min_dr;
-            bSuuAK4_dr = min_dr_AK4;
-
-         }
-         else if(gpNum == 5)
-         {
-            higgsAK8_dr= min_dr;
-            higgsAK4_dr = min_dr_AK4;
-
-         }
-         else if(gpNum == 12)
-         {
-            topWAK8_dr = min_dr;
-            topWAK4_dr = min_dr_AK4;
-
-         }
-         else if(gpNum == 13)
-         {
-            topbAK8_dr = min_dr;
-            topbAK4_dr = min_dr_AK4;
-
-         }
-         gpNum++;
-   }
-   /*
-   if((cosAngleChi1*cosAngleChi2 > 0))
-   {
-      std::cout << "Bad event: SJ1 Mass / SJ2 Mass  - " << superJet_mass[0] << "/" << superJet_mass[1];
-      std::cout << "    Objects in SuperJet 1: [";
-      if(cosAngleChi1<0)  std::cout << "Chi1 "; 
-      if(cosAngleChi2<0)  std::cout << "Chi2 "; 
-      if(cosAngleTop<0)   std::cout << "Top "; 
-      if(cosAngleW_Suu<0) std::cout << "W_Suu "; 
-      if(cosAngleB_Suu<0) std::cout << "b_Suu "; 
-      if(cosAngleHiggs<0) std::cout << "Higgs "; 
-      std::cout << "].  Objects in SuperJet 2: [";
-      if(cosAngleChi1>0)  std::cout << "Chi1 "; 
-      if(cosAngleChi2>0)  std::cout << "Chi2 "; 
-      if(cosAngleTop>0)   std::cout << "Top "; 
-      if(cosAngleW_Suu>0) std::cout << "W_Suu "; 
-      if(cosAngleB_Suu>0) std::cout << "b_Suu "; 
-      if(cosAngleHiggs>0) std::cout << "Higgs ";
-      std::cout << " ]";
-
-      //std::cout << "   cos chi1/chi2 w/ TA: " <<  cos(chi1_vec.Angle(thrust_vector)) << "/"<< cos(chi2_vec.Angle(thrust_vector)) << " ";
-      //std::cout << "   chi deltaR: " << sqrt(pow(chi1.Phi()-chi2.Phi(),2)+pow(chi1.Eta()-chi2.Eta(),2)) << std::endl;
-      std::cout << " Masses of jets being considered: ";
-      for(auto iJet = fatJets->begin(); iJet != fatJets->end(); iJet++)         ////////Over AK8 Jets
-      {
-         if((sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 100.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) || (iJet->userFloat("ak8PFJetsPuppiSoftDropMass") < 15.) ) continue;
-         std::cout << iJet->mass() << " ";
-      }
-      std::cout << std::endl;
-      int gpNum = 0; //gen particle number
-      for(auto iG = genParts.begin();iG != genParts.end();iG++)
-      {
-         double min_dr = 99999999999999.;
-         int jetnum =0;
-         int min_jetnum = 0;
-         
-         for(auto iJet = fatJets->begin(); iJet != fatJets->end(); iJet++)         ////////Over AK8 Jets
-         {
-            if((sqrt(pow(iJet->mass(),2)+pow(iJet->pt(),2)) < 100.) || (!(iJet->isPFJet())) || (!isgoodjet(iJet->eta(),iJet->neutralHadronEnergyFraction(), iJet->neutralEmEnergyFraction(),iJet->numberOfDaughters(),iJet->chargedHadronEnergyFraction(),iJet->chargedMultiplicity(),iJet->muonEnergyFraction(),iJet->chargedEmEnergyFraction())) || (iJet->userFloat("ak8PFJetsPuppiSoftDropMass") < 15.) ) continue;
-            jetnum++;
-            if(sqrt(pow(iG->Phi()-iJet->phi(),2)+pow(iG->Eta()-iJet->eta(),2)) < min_dr)
-            {
-               min_dr     = sqrt(pow(iG->Phi()-iJet->phi(),2)+pow(iG->Eta()-iJet->eta(),2));
-               min_jetnum = jetnum;
-            }
-         }
-         if      (gpNum == 4) std::cout << "Suu b closest j" << min_jetnum << ",dr=" << min_dr << "/";
-         else if (gpNum == 6) std::cout << "Higgs b1 closest j" << min_jetnum << ",dr=" << min_dr << "/";
-         else if (gpNum == 7) std::cout << "Higgs b2 closest j" << min_jetnum << ",dr=" << min_dr << "/";
-         else if (gpNum == 8) std::cout << "W Suu q1 closest j" << min_jetnum << ",dr=" << min_dr << "/";
-         else if (gpNum == 9) std::cout << "W Suu q2 closest j" << min_jetnum << ",dr=" << min_dr << "/";
-         else if (gpNum == 10) std::cout << "W top q1 closest j" << min_jetnum << ",dr=" << min_dr << "/";
-         else if (gpNum == 11) std::cout << "W top q2 closest j" << min_jetnum << ",dr=" << min_dr << "/";
-         else if (gpNum == 13) std::cout << "top b closest j" << min_jetnum << ",dr=" << min_dr << std::endl;
-         
-         gpNum++;
-      }
-   }
-   */
    superJetOne.clear();
    superJetTwo.clear();
    tree->Fill();
 }   
-DEFINE_FWK_MODULE(clusteringAnalyzer);
+DEFINE_FWK_MODULE(clusteringAnalyzerBR);
 
 
 
